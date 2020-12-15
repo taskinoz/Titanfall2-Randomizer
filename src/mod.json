@@ -1,0 +1,12 @@
+{
+	"ApiId" : "randomizer",
+	"Name" : "Titanfall 2 Randomizer",
+	"Description" : "A mod to randomize Weapons, Grenades, Abilities, and Helmet Collectables",
+	"Authors" : [
+		"Tristan Kennedy"
+	],
+	"Contacts" : [
+		"tristan@taskinoz.com"
+	],
+	"Version" : "1.0"
+}
