@@ -1,0 +1,1311 @@
+untyped
+
+global function Pickups_Init
+global function AddCollectible
+global function UpdateCollectiblesAfterLoadSaveGame
+global function CreateWeaponPickup
+global function CreatePickup
+global function WaitUntilPlayerPicksUp
+global function AddClipToWeapon
+global function AddRoundsToWeapon
+global function AddRoundToWeapon
+global function AddClipToMainWeapons
+global function AddTwoClipToMainWeapons
+global function AddRoundToOrdnance
+global function AddRoundsToTactical
+global function CreateScriptWeapon
+global function GetAllLeveledScriptWeapons
+global function TitanLoadoutWaitsForPickup  // Needed only to be global to spawn pickups from dev menu.
+
+#if DEV
+	global function Dev_ResetCollectiblesProgress_Level
+#endif
+
+const HEALTH_PICKUP_AMOUNT = 3000
+global const PICKUP_GLOW_FX = $"P_ar_titan_droppoint"
+//const HEALTH_MODEL = $"models/vehicle/droppod_fireteam/droppod_fireteam_collision.mdl"
+//const HEALTH_MODEL = $"models/domestic/trash_can_green_closed.mdl"
+//const HEALTH_MODEL = $"models/weapons/bullets/projectile_rocket_large.mdl"
+const HEALTH_MODEL = $"models/gameplay/health_pickup_small.mdl"
+const HEALTH_MODEL_LARGE = $"models/gameplay/health_pickup_large.mdl"
+
+const GRENADE_AMMO_MODEL = $"models/Weapons/ammoboxes/ammobox_01.mdl"
+const LION_MODEL = $"models/statues/lion_statue_bronze_green_small.mdl"
+//const HELMET_COLLECTIBLE_MODEL = $"models/statues/lion_statue_bronze_green_small.mdl"
+const HELMET_COLLECTIBLE_MODEL = $"models/humans/heroes/mlt_hero_jack_helmet_static.mdl"
+const COLLECTIBLE_GLOW_EFFECT = $"P_item_bluelion"
+
+const HELMET_COLLECTIBLE_MODEL_LIST = [
+	$"models/humans/grunts/imc_grunt_lmg_helmet.mdl",
+	$"models/humans/heroes/mlt_hero_anderson_helmet.mdl",
+	$"models/humans/heroes/mlt_hero_jack_helmet_static.mdl",
+	$"models/humans/heroes/mlt_hero_lastimosa_helmet.mdl",
+	$"models/humans/imc_pilot/male_br/imc_pilot_male_br_helmet_dam1.mdl",
+	$"models/statues/lion_statue_bronze_green_small.mdl"
+]
+
+int tempCollect = 0
+array<vector> collPosition = []
+
+global struct LeveledScriptedWeapons
+{
+	table<string, bool> foundScriptWeapons
+	array<entity> infoTargets
+}
+
+struct HealthPickup
+{
+	float healAmount
+	float healTime
+	string pickupSound
+	string healSound
+	string endSound
+	asset model
+}
+
+struct Collectible
+{
+	entity ent
+	int id
+	vector pos
+}
+
+struct
+{
+	int nextHealthDropSmall
+	int nextHealthDropLarge
+	float lastHealthDropTime
+	table<string, HealthPickup> healthPickups
+	array<Collectible> collectibles
+	int testMapCollectibleValue
+} file
+
+function Pickups_Init()
+{
+	HealthPickup small
+	small.healAmount = 0.4
+	small.healTime = 1.0
+	small.pickupSound = "Pilot_HealthPack_Small_Pickup"
+	small.healSound = "Pilot_HealthPack_Small_Healing"
+	small.endSound	 = "Pilot_HealthPack_Small_Healing_End"
+	small.model	 = HEALTH_MODEL
+	file.healthPickups[ "health_pickup_small" ] <- small
+
+	HealthPickup large
+	large.healAmount = 0.8
+	large.healTime = 2.0
+	large.pickupSound = "Pilot_HealthPack_Large_Pickup"
+	large.healSound = "Pilot_HealthPack_Large_Healing"
+	large.endSound	 = "Pilot_HealthPack_Large_Healing_End"
+	large.model	 = HEALTH_MODEL_LARGE
+	file.healthPickups[ "health_pickup_large" ] <- large
+
+
+	//AddSpawnCallbackEditorClass( "script_ref", "script_pickup_health", HealthPickup_OnSpawned )
+	//AddSpawnCallbackEditorClass( "script_ref", "script_pickup_health_large", HealthPickupLarge_OnSpawned )
+	AddSpawnCallbackEditorClass( "script_mover_lightweight", "script_collectible", AddCollectible )
+	AddSpawnCallbackEditorClass( "script_ref", "script_pickup_weapon", CreateWeaponPickup )
+	//AddSpawnCallbackEditorClass( "script_ref", "script_pickup_grenades", CreateGrenadeAmmoPickup )
+	//AddSpawnCallbackEditorClass( "script_ref", "script_pickup_ammo", CreateGrenadeAmmoPickup )
+	AddSpawnCallbackEditorClass( "script_ref", "script_pickup_titan", CreateTitanPickup )
+
+	PrecacheModel( HEALTH_MODEL )
+	PrecacheModel( HEALTH_MODEL_LARGE )
+	PrecacheModel( GRENADE_AMMO_MODEL )
+	PrecacheModel( LION_MODEL )
+	PrecacheModel( HELMET_COLLECTIBLE_MODEL )
+	PrecacheParticleSystem( COLLECTIBLE_PICKUP_EFFECT )
+	PrecacheParticleSystem( COLLECTIBLE_GLOW_EFFECT )
+
+	// Precache Helmet Array
+	for (var i=0;i<=HELMET_COLLECTIBLE_MODEL_LIST.len()-1;i++) {
+		PrecacheModel(HELMET_COLLECTIBLE_MODEL_LIST[i])
+	}
+
+	RegisterSignal( "NewHealthPickup" )
+	RegisterSignal( "CollectibleEndThink" )
+
+	SetNextHealthDropSmall()
+	SetNextHealthDropLarge()
+
+	AddCallback_EntitiesDidLoad( EntitiesDidLoad_Pickups )
+}
+
+void function CreateScriptWeapon( entity point )
+{
+	CreateWeaponPickup( point )
+	array<entity> linkParents = point.GetLinkParentArray()
+	foreach ( entity linkParent in linkParents )
+	{
+		linkParent.UnlinkFromEnt( point )
+	}
+	//point.Destroy()
+}
+
+void function EntitiesDidLoad_Pickups()
+{
+	if ( shGlobal.proto_pilotHealthPickupsEnabled )
+	{
+		AddDeathCallback( "npc_soldier", OnNPCKilled_DropHealth )
+		AddDeathCallback( "npc_spectre", OnNPCKilled_DropHealth )
+	}
+
+	SetupCollectibles()
+}
+
+void function SetNextHealthDropSmall()
+{
+	if ( shGlobal.proto_pilotHealthRegenDisabled )
+		file.nextHealthDropSmall = RandomInt( 6 ) + 6
+	else
+		file.nextHealthDropSmall = RandomInt( 4 ) + 4
+
+	file.lastHealthDropTime = Time()
+}
+
+void function SetNextHealthDropLarge()
+{
+	file.nextHealthDropLarge = RandomIntRange( 3, 6 )
+}
+
+void function OnNPCKilled_DropHealth( entity npc, var damageInfo )
+{
+	entity attacker = DamageInfo_GetAttacker( damageInfo )
+	if ( !IsValid( attacker ) )
+		return
+
+	switch ( npc.GetClassName() )
+	{
+		case "npc_soldier":
+		case "npc_spectre":
+		case "npc_stalker":
+			break
+
+		default:
+			return
+	}
+
+	OnNPCKilled_DropHealth_Internal( npc, attacker, damageInfo )
+}
+
+void function OnNPCKilled_DropHealth_Internal( entity npc, entity attacker, var damageInfo )
+{
+	if ( npc.GetTeam() != TEAM_IMC )
+		return
+
+	file.nextHealthDropSmall--
+
+	if ( !DropHealthFromDeath( npc, attacker ) )
+		return
+
+	SetNextHealthDropSmall()
+
+	vector angles = npc.GetAngles()
+	angles.x = 0
+
+	vector forward = AnglesToForward( angles )
+
+	vector origin = npc.GetWorldSpaceCenter() + forward * 16
+
+	entity health
+	file.nextHealthDropLarge--
+	if ( file.nextHealthDropLarge < 0 && shGlobal.proto_pilotHealthRegenDisabled )
+	{
+		SetNextHealthDropLarge()
+		health = CreateHealthPickupSized( origin, angles, "health_pickup_large" )
+	}
+	else
+	{
+		health = CreateHealthPickupSized( origin, angles, "health_pickup_small" )
+	}
+
+	EmitSoundOnEntity( health, "Pilot_HealthPack_Drop" )
+	health.Fire( "Kill", "", 180 )
+}
+
+bool function DropHealthFromDeath( entity npc, entity attacker )
+{
+	if ( !attacker.IsPlayer() )
+		return file.nextHealthDropSmall < 0
+
+	if ( Time() - file.lastHealthDropTime < 3.0 )
+		return false
+
+	float healthRatio = float( attacker.GetHealth() ) / attacker.GetMaxHealth()
+
+	float chanceFromNextHealth = GraphCapped( file.nextHealthDropSmall, 0, 5, 0.4, 1.1 )
+	float chanceFromLowHealth = GraphCapped( healthRatio, 0.25, 0.80, 0.4, 1.1 )
+	float dropChance = chanceFromNextHealth * chanceFromLowHealth
+
+	return RandomFloat( 1.0 ) > dropChance
+
+	/*
+	if ( file.nextHealthDropSmall <= 1 )
+	{
+		float ratio = float( attacker.GetHealth() ) / attacker.GetMaxHealth() - 0.15
+		float random = RandomFloat( 1.0 )
+		if ( random > ratio )
+			return true
+	}
+
+	if ( Time() - file.lastHealthDropTime < 5.0 )
+		return false
+
+	if ( float( attacker.GetHealth() ) / attacker.GetMaxHealth() > 0.25 )
+		return false
+
+	return Distance( attacker.GetOrigin(), npc.GetOrigin() ) < 2000
+	*/
+}
+
+void function CreateTitanPickup( entity ent )
+{
+	entity mover = CreatePickup( ent, LION_MODEL, DropTitanPickedUp )
+
+	mover.EndSignal( "OnDestroy" )
+	wait 0.2 // for some buggy reason!?
+	EmitSoundOnEntity( mover, "health_pickup_loopsound_far" )
+	EmitSoundOnEntity( mover, "health_pickup_loopsound_near" )
+	return
+}
+
+bool function DropTitanPickedUp( entity player )
+{
+	if ( player.IsTitan() )
+		return false
+
+	AddPlayerScore( player, "PilotHealthPickup" )
+	EmitSoundOnEntity( player, "titan_energyshield_up" )
+	player.SetNextTitanRespawnAvailable( 0 )
+
+	return true
+}
+
+function DisplayTempNameText( entity ent, string text )
+{
+	ent.EndSignal( "OnDestroy" )
+	for ( ;; )
+	{
+		array<entity> players = GetPlayerArray()
+		if ( players.len() )
+		{
+			entity nearestPlayer = GetClosest( players, ent.GetOrigin(), 2300 )
+			if ( nearestPlayer != null )
+				DebugDrawText( ent.GetWorldSpaceCenter(), text, true, 1 )
+		}
+		wait 0.9
+	}
+}
+
+entity function CreateHealthPickupSized( vector origin, vector angles, string healthType )
+{
+	HealthPickup pickup = file.healthPickups[ healthType ]
+	entity ent = CreatePropPhysics( pickup.model, origin, angles )
+	ent.NotSolid()
+
+
+	angles = AnglesCompose( angles, < -45,0,0> )
+	vector forward = AnglesToForward( angles )
+	ent.SetVelocity( forward * 200 )
+
+	ent.SetAngularVelocity( RandomFloatRange( 300, 500 ), RandomFloatRange( -100, 100 ), 0 )
+
+	thread HealthPickupWaitsForPickup( ent, pickup )
+	Highlight_SetNeutralHighlight( ent, "health_pickup" )
+	return ent
+}
+
+void function HealthPickup_OnSpawned( entity ent )
+{
+	//if ( shGlobal.proto_pilotHealthRegenDisabled )
+	{
+		CreateHealthPickupSized( ent.GetOrigin(), ent.GetAngles(), "health_pickup_small" )
+		ent.Destroy()
+		return
+	}
+
+}
+
+void function HealthPickupLarge_OnSpawned( entity ent )
+{
+	if ( shGlobal.proto_pilotHealthRegenDisabled )
+	{
+		CreateHealthPickupSized( ent.GetOrigin(), ent.GetAngles(), "health_pickup_small" )
+		ent.Destroy()
+		//HealthPickup_OnSpawned( ent )
+		return
+	}
+
+	CreateHealthPickupSized( ent.GetOrigin(), ent.GetAngles(), "health_pickup_large" )
+	ent.Destroy()
+}
+
+void function CreateHealthRegenField( entity ent )
+{
+	ent.EndSignal( "OnDestroy" )
+	OnThreadEnd(
+		function() : ( ent )
+		{
+			if ( IsValid( ent ) )
+				ent.Destroy()
+		}
+	)
+
+	PickupGlow pickupGlow = CreatePickupGlow( ent, 0, 255, 0 )
+
+	float healthRemainingMax = 1000
+	float healthRemainingCurrent = healthRemainingMax
+	float useIncrement = 9
+	float refillRate = 0
+	float nextRegenTime = 0
+
+	bool available
+	entity player
+	entity lastPlayer
+
+	for ( ;; )
+	{
+		WaitFrame()
+
+		float ratio = healthRemainingCurrent / healthRemainingMax
+		int green = int( Graph( ratio, 0, 1, 0, 255 ) )
+		PickupGlow_SetColor( pickupGlow, 0, green, 0 )
+
+		if ( Time() > nextRegenTime )
+		{
+			healthRemainingCurrent = min( healthRemainingCurrent + refillRate, healthRemainingMax )
+			nextRegenTime = Time() + 1.2
+		}
+
+		if ( healthRemainingCurrent < useIncrement )
+			continue
+
+		player = GetHealthPickupPlayer( ent )
+
+		if ( lastPlayer != player )
+		{
+			if ( IsValid( lastPlayer ) )
+			{
+				//EmitSoundOnEntity( lastPlayer, "Pilot_Stimpack_Deactivate" )
+				StopSoundOnEntity( lastPlayer, "Pilot_Stimpack_Loop" )
+			}
+
+			if ( player != null )
+			{
+				// new player powers up
+				EmitSoundOnEntity( player, "Pilot_Stimpack_Activate" )
+				EmitSoundOnEntity( player, "Pilot_Stimpack_Loop" )
+			}
+
+			lastPlayer = player
+		}
+
+		if ( player == null )
+			continue
+
+		// recent damage reduces healing effect, so you cant abuse it
+		float recentDamage = TotalDamageOverTime_BlendedOut( player, 0.5, 5.0 )
+
+		// damage is ramped down based on how much damage was taken recently
+		float damageMod = GraphCapped( recentDamage, 0, 40, 1.0, 0.35 )
+		float healthGain = useIncrement * damageMod
+
+		healthRemainingCurrent -= healthGain
+		int newHealth = int( min( player.GetHealth() + healthGain, player.GetMaxHealth() ) )
+		player.SetHealth( newHealth )
+
+		nextRegenTime = Time() + 10
+	}
+}
+
+entity function GetHealthPickupPlayer( entity ent )
+{
+	// try to heal the player
+	entity player = GetPickupPlayer( ent )
+	if ( player == null )
+		return null
+	if ( !IsPilot( player ) )
+		return null
+	if ( player.GetHealth() >= player.GetMaxHealth() )
+		return null
+
+	return player
+}
+
+void function CreateGrenadeAmmoPickup( entity ent )
+{
+	thread DisplayTempNameText( ent, "Ammo" )
+	CreatePickup( ent, GRENADE_AMMO_MODEL, GenericAmmoPickup )
+	CreatePickupGlow( ent, 13, 104, 255 )
+}
+
+entity function CreatePickup( entity ent, asset model, bool functionref( entity ) pickupFunc )
+{
+	entity mover = CreateEntity( "script_mover" )
+	mover.kv.solid = 0
+	mover.SetValueForModelKey( model )
+	mover.SetFadeDistance( 5000 )
+	mover.kv.SpawnAsPhysicsMover = 0
+	mover.SetOrigin( ent.GetOrigin() )
+	mover.SetAngles( ent.GetAngles() )
+	DispatchSpawn( mover )
+
+	ent.EndSignal( "OnDestroy" )
+
+	mover.SetOwner( ent )
+
+	ent.SetParent( mover )
+	thread PickupWaitsForPickup( ent, mover, pickupFunc )
+
+	return mover
+}
+
+void function PickupWaitsForPickup( entity ent, entity mover, bool functionref( entity ) pickupFunc )
+{
+	ent.EndSignal( "OnDestroy" )
+	OnThreadEnd(
+		function() : ( mover, ent )
+		{
+			if ( IsValid( mover ) )
+				mover.Destroy()
+			if ( IsValid( ent ) )
+				ent.Destroy()
+		}
+	)
+
+//	local colorVec = Vector(r,g,b)
+//	local cpoint = CreateEntity( "info_placement_helper" )
+//	SetTargetName( cpoint, UniqueString( "pickup_controlpoint" ) )
+//	DispatchSpawn( cpoint )
+//	cpoint.SetOrigin( colorVec )
+//	local glowFX = PlayFXWithControlPoint( PICKUP_GLOW_FX, mover.GetOrigin(), cpoint, null, null, null, C_PLAYFX_LOOP )
+//
+//	OnThreadEnd(
+//		function() : ( ent, mover, glowFX, cpoint )
+//		{
+//			cpoint.Fire( "Kill", "", 1.0 )
+//			if ( IsValid(glowFX) )
+//			{
+//				glowFX.Fire( "StopPlayEndCap" )
+//				glowFX.Fire( "Kill", "", 1.0 )
+//			}
+//			mover.Destroy()
+//			ent.Destroy()
+//		}
+//	)
+
+	for ( ;; )
+	{
+		entity player = WaitUntilPlayerPicksUp( ent )
+		if ( pickupFunc( player ) )
+			return
+		WaitFrame()
+	}
+}
+
+void function HealthPickupWaitsForPickup( entity ent, HealthPickup pickup )
+{
+	ent.EndSignal( "OnDestroy" )
+	OnThreadEnd(
+		function() : ( ent )
+		{
+			if ( IsValid( ent ) )
+				ent.Destroy()
+		}
+	)
+
+	for ( ;; )
+	{
+		WaitFrame()
+
+		entity player = WaitUntilPlayerPicksUp( ent )
+		if ( player.IsTitan() )
+			continue
+		if ( player.GetHealth() >= player.GetMaxHealth() )
+			continue
+
+		thread HealPlayerOverTime( player, pickup )
+		return
+	}
+}
+
+
+void function TitanLoadoutWaitsForPickup( entity ent, bool functionref( entity, entity ) pickupFunc )
+{
+	ent.EndSignal( "OnDestroy" )
+	OnThreadEnd(
+		function() : ( ent )
+		{
+			if ( IsValid( ent ) )
+				ent.Destroy()
+		}
+	)
+
+	for ( ;; )
+	{
+		entity player = WaitUntilPlayerPicksUp( ent )
+		if ( pickupFunc( player, ent ) )
+			return
+		WaitFrame()
+	}
+}
+
+
+entity function GetPickupPlayer( entity ent )
+{
+	array<entity> players = GetPlayerArray()
+
+	vector entOrigin = ent.GetCenter()
+
+	foreach ( player in players )
+	{
+		if ( !IsAlive( player ) )
+			continue
+
+		int pickupDist
+		if ( player.IsTitan() )
+			pickupDist = 256 * 256
+		else
+			pickupDist = 96 * 96
+
+		if ( GetEditorClass( ent ) == "script_collectible" )
+			pickupDist = 72 * 72
+
+		vector playerOrigin = player.GetOrigin()
+		if ( DistanceSqr( playerOrigin, entOrigin ) < pickupDist )
+		{
+			TraceResults trace
+			trace = TraceLine( entOrigin, playerOrigin, [ player, ent ], TRACE_MASK_SOLID, TRACE_COLLISION_GROUP_NONE )
+			if ( trace.fraction >= 0.99 || trace.hitEnt == ent )
+				return player
+		}
+	}
+
+	return null
+}
+
+entity function WaitUntilPlayerPicksUp( entity ent )
+{
+	while ( true )
+	{
+		entity player = GetPickupPlayer( ent )
+		if ( player != null )
+			return player
+		WaitFrame()
+	}
+
+	unreachable
+}
+
+function PickupHover( mover )
+{
+	mover.EndSignal( "OnDestroy" )
+
+	int direction = 1
+
+	while ( 1 )
+	{
+		mover.MoveTo( mover.GetOrigin() + Vector( 0, 0, 20*direction ), 1, 0.4, 0.4 )
+		mover.RotateTo( mover.GetAngles() + Vector( 0, 90, 0 ), 1, 0, 0 )
+		direction *= -1
+		wait 1
+	}
+}
+
+int function AddClipToMainWeapons( entity player )
+{
+	int gainedAmmo
+	foreach ( weapon in player.GetMainWeapons() )
+	{
+		gainedAmmo += AddClipToWeapon( player, weapon )
+	}
+	return gainedAmmo
+}
+
+int function AddTwoClipToMainWeapons( entity player )
+{
+	int gainedAmmo
+	for ( int i = 0; i < 2; i++ )
+	{
+		foreach ( weapon in player.GetMainWeapons() )
+		{
+			gainedAmmo += AddClipToWeapon( player, weapon )
+		}
+	}
+	return gainedAmmo
+}
+
+int function AddRoundToOrdnance( entity player )
+{
+	int gainedAmmo
+	entity ordnance = player.GetOffhandWeapon( OFFHAND_ORDNANCE )
+	if ( IsValid( ordnance ) )
+		gainedAmmo += AddRoundToWeapon( player, ordnance )
+	return gainedAmmo
+}
+
+int function AddRoundsToTactical( entity player, int count = 1 )
+{
+	int gainedAmmo
+	entity ordnance = player.GetOffhandWeapon( OFFHAND_SPECIAL )
+	if ( IsValid( ordnance ) )
+		gainedAmmo += AddRoundsToWeapon( player, ordnance, count )
+	return gainedAmmo
+}
+
+int function AddClipToWeapon( entity player, entity weapon )
+{
+	int ammoPerClip = weapon.GetWeaponPrimaryClipCountMax()
+	int gainedAmmo = 0
+
+	switch ( weapon.GetWeaponInfoFileKeyField( "fire_mode" ) )
+	{
+		case "offhand_hybrid":
+		case "offhand":
+		case "offhand_instant":
+
+			// offhand weapons typically cant store ammo, so refill the current clip
+			if ( ammoPerClip > 0 )
+			{
+				int primaryClipCount = weapon.GetWeaponPrimaryClipCount()
+				weapon.SetWeaponPrimaryClipCount( ammoPerClip )
+				gainedAmmo = weapon.GetWeaponPrimaryClipCount() - primaryClipCount
+			}
+			break
+
+		default:
+			int primaryAmmoCount = weapon.GetWeaponPrimaryAmmoCount()
+			// this weapon has off-clip ammo storage, so add ammo to storage
+			int stockpile = player.GetWeaponAmmoStockpile( weapon )
+			weapon.SetWeaponPrimaryAmmoCount( primaryAmmoCount + ammoPerClip )
+			gainedAmmo = player.GetWeaponAmmoStockpile( weapon ) - stockpile
+			break
+	}
+
+	return gainedAmmo
+}
+
+int function AddRoundToWeapon( entity player, entity weapon )
+{
+	return AddRoundsToWeapon( player, weapon, 1 )
+}
+
+int function AddRoundsToWeapon( entity player, entity weapon, int rounds )
+{
+	int ammoPerClip = weapon.GetWeaponPrimaryClipCountMax()
+	int gainedAmmo = 0
+
+	switch ( weapon.GetWeaponInfoFileKeyField( "fire_mode" ) )
+	{
+		case "offhand_hybrid":
+		case "offhand":
+		case "offhand_instant":
+
+			// offhand weapons typically cant store ammo, so refill the current clip
+			if ( ammoPerClip > 0 )
+			{
+				int primaryAmmoInClipCount = weapon.GetWeaponPrimaryClipCount()
+				int newAmmo = minint( ammoPerClip, primaryAmmoInClipCount + rounds )
+				if ( newAmmo > primaryAmmoInClipCount  )
+				{
+					weapon.SetWeaponPrimaryClipCount( newAmmo )
+					gainedAmmo = weapon.GetWeaponPrimaryClipCount() - primaryAmmoInClipCount
+				}
+			}
+			break
+
+
+		default:
+			int primaryAmmoCount = weapon.GetWeaponPrimaryAmmoCount()
+			// this weapon has off-clip ammo storage, so add ammo to storage
+			int stockpile = player.GetWeaponAmmoStockpile( weapon )
+			weapon.SetWeaponPrimaryAmmoCount( primaryAmmoCount + rounds )
+			gainedAmmo = player.GetWeaponAmmoStockpile( weapon ) - stockpile
+			break
+	}
+
+	return gainedAmmo
+}
+
+bool function GenericAmmoPickup( entity player )
+{
+	if ( player.IsTitan() )
+		return false
+
+	Assert( player.IsPlayer() )
+
+	int gainedAmmo = 0
+	foreach ( weapon in player.GetMainWeapons() )
+	{
+		gainedAmmo += AddClipToWeapon( player, weapon )
+		gainedAmmo += AddClipToWeapon( player, weapon )
+		gainedAmmo += AddClipToWeapon( player, weapon )
+		gainedAmmo += AddClipToWeapon( player, weapon )
+	}
+	foreach ( weapon in player.GetOffhandWeapons() )
+	{
+		gainedAmmo += AddClipToWeapon( player, weapon )
+	}
+
+	if ( gainedAmmo > 0 )
+	{
+		AddPlayerScore( player, "PilotAmmoPickup" )
+		EmitSoundOnEntity( player, "BurnCard_GrenadeRefill_Refill" )
+		EmitSoundOnEntity( player, "titan_energyshield_up" )
+		return true
+	}
+
+	return false
+}
+
+
+bool function GrenadeAmmoPickedUp( entity player )
+{
+	if ( player.IsTitan() )
+		return false
+
+	Assert( player.IsPlayer() )
+
+	entity weapon = player.GetOffhandWeapon( 0 )
+	if ( !IsValid( weapon ) )
+		return false
+
+	int ammo = weapon.GetWeaponPrimaryClipCount()
+	int newAmmo = minint( player.GetWeaponAmmoMaxLoaded( weapon ), ammo + 2 )
+	weapon.SetWeaponPrimaryClipCount( newAmmo )
+
+	bool pickup = newAmmo > ammo
+
+	if ( pickup )
+	{
+		AddPlayerScore( player, "PilotAmmoPickup" )
+		EmitSoundOnEntity( player, "BurnCard_GrenadeRefill_Refill" )
+		EmitSoundOnEntity( player, "titan_energyshield_up" )
+		return true
+	}
+
+	return false
+}
+
+void function HealPlayerOverTime( entity player, HealthPickup pickup )
+{
+	//StimPlayer( player, pickup.healTime * 2.0 )
+
+	Assert( IsNewThread(), "Must be threaded off" )
+	Assert( player.IsPlayer() )
+	//AddPlayerScore( player, "PilotHealthPickup" )
+	//EmitSoundOnEntity( player, "titan_energyshield_up" )
+
+	// cycle old effects
+	//player.Signal( "NewHealthPickup" )
+	//player.EndSignal( "NewHealthPickup" )
+
+	Assert( IsAlive( player ) )
+	player.EndSignal( "OnDeath" )
+
+	EmitSoundOnEntity( player, pickup.pickupSound )
+	EmitSoundOnEntity( player, pickup.healSound )
+
+
+	int frames = 10 * int( pickup.healTime )
+	float amount = player.GetMaxHealth() * pickup.healAmount
+	float healthPerFrame = amount / frames
+	float midTime = Time() + pickup.healTime * 0.5
+	float healthRemainder = 0
+
+	for ( int i = 0; i < frames; i++ )
+	{
+		WaitFrame()
+
+		float healthThisFrame
+		if ( Time() < midTime )
+			healthThisFrame = healthPerFrame * 0.6
+		else
+			healthThisFrame = healthPerFrame * 1.4
+
+		healthRemainder += healthThisFrame % 1
+		healthThisFrame -= healthThisFrame % 1
+		healthThisFrame += ( healthRemainder - healthRemainder % 1 )
+		healthRemainder %= 1
+//		printt( "healththisframe is " + healthThisFrame + " healthRemainder is " + healthRemainder )
+
+		float newHealth = min( player.GetHealth() + healthThisFrame, player.GetMaxHealth() )
+		player.SetHealth( newHealth )
+	}
+
+	EmitSoundOnEntity( player, pickup.endSound )
+}
+
+LeveledScriptedWeapons function GetAllLeveledScriptWeapons()
+{
+	LeveledScriptedWeapons leveledScriptedWeapons
+
+	table<string, bool> tableAllWeapons
+
+	foreach ( weaponName in GetAllSPWeapons() )
+	{
+		tableAllWeapons[ weaponName ] <- true
+	}
+
+	foreach ( ent in GetEntArrayByClass_Expensive( "info_target" ) )
+	{
+		if ( !ent.HasKey( "editorclass" ) )
+			continue
+
+		string editorclass = expect string( ent.kv.editorclass )
+		if ( !( editorclass in tableAllWeapons ) )
+			continue
+
+		leveledScriptedWeapons.infoTargets.append( ent )
+		leveledScriptedWeapons.foundScriptWeapons[ editorclass ] <- true
+	}
+
+	// legacy support
+	foreach ( ent in GetEntArrayByClass_Expensive( "script_ref" ) )
+	{
+		if ( !ent.HasKey( "editorclass" ) )
+			continue
+		if ( ent.kv.editorclass != "script_pickup_weapon" )
+			continue
+
+		Assert( ent.HasKey( "script_weapon" ) )
+		string weapon = expect string( ent.kv.script_weapon )
+		if ( !( weapon in tableAllWeapons ) )
+			continue
+
+		//leveledScriptedWeapons.infoTargets.append( ent )
+		leveledScriptedWeapons.foundScriptWeapons[ weapon ] <- true
+	}
+
+	AddSpawnCallbackEditorClass( "script_ref", "script_pickup_weapon", CreateWeaponPickup )
+
+	return leveledScriptedWeapons
+}
+
+void function CreateWeaponPickup( entity ent )
+{
+	Assert( ent.HasKey( "script_weapon" ) )
+	string weaponClass = ent.GetValueForKey( "script_weapon" )
+
+	#if DEV
+	if ( !IsTestMap() )
+	{
+		if ( !WeaponIsPrecached( weaponClass ) )
+		{
+			CodeWarning( "Weapon " + weaponClass + " is not precached, re-export auto precache script" )
+			return
+		}
+
+		if ( !GetWeaponInfoFileKeyField_Global( weaponClass, "leveled_pickup" ) )
+		{
+			CodeWarning( "Tried to place illegal " + weaponClass + " in leveled at " + ent.GetOrigin() )
+			return
+		}
+	}
+
+	VerifyWeaponPickupModel( ent, weaponClass )
+
+	if ( GetWeaponInfoFileKeyField_Global( weaponClass, "offhand_default_inventory_slot" ) == OFFHAND_LEFT )
+	{
+		CodeWarning( "Illegal pickup " + weaponClass + " at " + ent.GetOrigin() )
+		return
+	}
+
+	#endif
+
+
+	bool doMarkAsLoadoutPickup = false
+	int loadoutIndex = GetSPTitanLoadoutIndexForWeapon( weaponClass )
+	if ( loadoutIndex >= 0 )
+	{
+		if ( IsBTLoadoutUnlocked( loadoutIndex ) )
+			return
+		else
+			doMarkAsLoadoutPickup = true
+		}
+
+	bool constrain = !ent.HasKey( "start_constrained" ) || ( ent.HasKey( "start_constrained" ) && ent.GetValueForKey( "start_constrained" ) == "1" )
+	entity weapon
+
+	if ( constrain ) // make all weapons constrained for now
+	{
+		weapon = CreateWeaponEntityByNameConstrained( weaponClass, ent.GetOrigin(), ent.GetAngles() )
+	}
+	else
+	{
+		weapon = CreateWeaponEntityByNameWithPhysics( weaponClass, ent.GetOrigin(), ent.GetAngles() )
+		weapon.SetVelocity( <0,0,0> )
+	}
+
+	SetTargetName( weapon, "leveled_" + weaponClass )
+	if ( ent.HasKey( "fadedist" ) )
+	{
+		weapon.kv.fadedist = ent.kv.fadedist
+	}
+	else
+	{
+		weapon.kv.fadedist = -1
+	}
+
+	ApplyWeaponModsFromEnt( ent, weapon )
+
+	if ( ent.HasKey( "script_name" ) )
+	{
+		weapon.kv.script_name = ent.kv.script_name
+	}
+
+	if ( doMarkAsLoadoutPickup )
+	{
+		weapon.MarkAsLoadoutPickup()
+		thread CreateTitanWeaponPickupHintTrigger( weapon )
+		thread TitanLoadoutWaitsForPickup( weapon, SPTitanLoadoutPickup )
+	}
+
+	HighlightWeapon( weapon )
+
+	// for s2s -mo
+	// for sp_training (pickups travel with moving gun racks) -sean
+	if ( ent.GetParent() )
+	{
+		weapon.SetParent( ent.GetParent(), "", true )
+	}
+
+	// for sp_training, to replenish the weapon when it's picked up -sean
+	ent.e.attachedEnts.append( weapon )
+}
+
+void function VerifyWeaponPickupModel( entity ent, string weaponClass )
+{
+	var playermodel
+	var playermodel1 = GetWeaponInfoFileKeyFieldAsset_Global( weaponClass, "droppedmodel" )
+	var playermodel2 = GetWeaponInfoFileKeyFieldAsset_Global( weaponClass, "playermodel" )
+	if ( playermodel1 != $"" )
+		playermodel = playermodel1
+	else
+		playermodel = playermodel2
+	playermodel = playermodel.tolower()
+	expect asset( playermodel )
+
+	asset modelName = ent.GetModelName().tolower()
+	if ( modelName != $"" && playermodel != modelName )
+		CodeWarning( "Incorrect Model on weapon " + weaponClass + " at " + ent.GetOrigin() + ", replace with real weapon for auto fix. ( " + modelName + " != " + playermodel + ")" )
+}
+
+void function ApplyWeaponModsFromEnt( entity ent, entity weapon )
+{
+	if ( ent.HasKey( "script_mods" ) )
+	{
+		array<string> mods = split( ent.GetValueForKey( "script_mods" ), " " )
+		if ( mods.len() > 0 )
+		{
+			weapon.SetMods( mods )
+			return
+		}
+	}
+
+	array<string> mods = GetWeaponModsForCurrentLevel( weapon.GetWeaponClassName() )
+	if ( mods.len() )
+	{
+		weapon.SetMods( [ mods.getrandom() ] )
+	}
+}
+
+
+void function AddCollectible( entity ent )
+{
+	Assert( ent.GetClassName() == "script_mover_lightweight" )
+
+	//if ( ent.GetModelName() != HELMET_COLLECTIBLE_MODEL )
+		ent.SetModel( HELMET_COLLECTIBLE_MODEL_LIST[RandomIntRange(0,HELMET_COLLECTIBLE_MODEL_LIST.len())] )
+		//ent.SetModel( HELMET_COLLECTIBLE_MODEL )
+
+	ent.DisableFastPathRendering() // Workaround for glow effect not drawing (bug #177177)
+
+	// RANDOM HELMET LOCATIONS
+	//------------------------
+
+	if (collPosition.len()==0)
+	{
+		switch (GetMapName())
+		{
+			case "sp_training":
+				collPosition = [< -5676, -3950, 50>,< -6560, -4907, 120>,< -7275, 194, 470>,< -4909, 4708, 430>,< 1984, -2602, -180>,< 469, 6443, 800>]
+				printt("Set Vect")
+				break
+			case "sp_crashsite":
+				collPosition = [< -102, 3244, -12310>,< -211, -9829, 470>,< -282, -9443, 1390>,< -4580, -8700, 1330>,< -8121, -7733, 910>,< -7771, -6157, 960>,< -4900, -3945, 1360>,< -5257, -2809, 2440>,< -4461, -3137, 1820>,< -3503, -1763, 740>,< -255, 619, -30>,< -5328, -158, 790>,< -8088, 1983, 1030>,< -6100, 3237, 810>,< -4251, 4086, 1960>]
+				printt("Set Vect")
+				break
+			case "sp_sewers1":
+				collPosition = [< 13206, -13059, 30>,< 9587, -10354, 370>,< 9872, -2024, 80>,< 7974, -127, 940>,< 11907, 3341, 560>,< 10180, 10374, 490>,< 9105, 9264, 710>,< 3289, 8576, 40>,< -1228, 5591, 170>,< -12, 1888, 190>,< -3386, -421, 990>,< -3688, 1196, 2180>,< -10547, -4221, 2380>,< -5643, -6347, 340>]
+				//collPosition = [< 469, 6443, 800>]
+				printt("Set Vect")
+				break
+			case "sp_boomtown_start":
+				collPosition = [< 14705, -9049, 9750>,< 11249, -9434, 8860>,< 8551, -11689, 9190>,< 4773, -12333, 8840>,< 5402, -8225, 9250>,< 1304, -12887, 8254>,< -142, -11726, 7326>,< 41, -6874, 7570>,< 2691, -3499, 7380>,< 2093, -633, 7418>,< 5146, -504, 7130>,< 9253, -1280, 7782>,< 12852, -1029, 6755>,< 10928, -4685, 6938>,< 10051, -4259, 7492>]
+				//collPosition = [< 469, 6443, 800>]
+				printt("Set Vect")
+				break
+			case "sp_boomtown":
+				collPosition = [< -8709, 3736, 7602>,< -12686, 4147, 6904>,< -14526, 7666, 6315>,< -13758, 10504, 2962>,< -7671, 4610, 2806>,< -6116, 5349, 3686>,< -2162, 3302, 2996>,< -2314, 11935, 2454>,< 7851, 12275, 2086>,< 7075, 7249, 3102>,< 8380, 3599, 2806>,< 8159, -3769, 2214>,< -7137, -12083, 3504>,< -6001, -4978, 4334>,< -7166, -2132, 5070>]
+				printt("Set Vect")
+				break
+			case "sp_boomtown_end":
+				collPosition = [< -15112, -4276, -3054>,< -14881, -7283, -2571>,< -13088, -9760, -1697>,< -11108, -9316, -2055>,< -8029, -8370, -1814>,< -5265, -5549, -1471>,< -6052, -4855, -3090>,< -143, 1945, -3337>,< -2586, -4326, -3057>,< -3012, -2514, -2443>,< 4916, -1175, -2592>,< 4404, -4717, -1208>,< 7009, -4506, -2757>,< 11614, -2920, -2947>,< 8604, -2012, -3227>,< 14457, 1296, -2653>]
+				printt("Set Vect")
+				break
+			case "sp_hub_timeshift":
+				collPosition = [< -425, -7636, 123704>,< 1263, -8163, 1053>,< -509, -8121, 854>,< -736, -10821, 1024>,< -1821, -8837, 12311>,< -3428,-4878, -857>,< -1455, -3357, -415>,< 1029, -840, -936>,< 782, -2082, -1145>,< -3179, -2859, -170>,< -4558, -4008, 11139>,< -198, -5216, 10662>,< 13, -3354, 11318>,< 611, -2724, 10247>,< -3033, -3749, 10397>,< -3583, -2054, 11155>]
+				printt("Set Vect")
+				break
+			case "sp_timeshift_spoke02":
+				collPosition = [< 211, -4704, -430>,< 692, -4748, 10963>,< 672, -5579, -341>,< 3194, -3630, -393>,< 2940, -4798, 11006>,< 3381, -3395, 10750>,< 4496, -3806, -475>,< 5829, -4205, -769>,< 6589, -4219, 11776>,< 5144, -3701, 254>,< 9168, -4484, 11584>,< 10989, -3345, 336>,< 12894, -2329, -230>,< 11329, -2490, 11525>,< 11403, 604, 303>,< 6570, 2676, 11525>,< 3236, -1573, 11414>,< 2469, -4678, 1038>,< 3044, -4496, 10089>,< 3193, -4186, -1264>]
+				printt("Set Vect")
+				break
+			case "sp_beacon":
+				collPosition = [< 12668, -9964, 2729>,< 10893, -9084, 1439>,< 4783, -8376, -301>,< 7005, -5176, -362>,< 9360, -3196, -369>,< 8156, 1851, -368>,< 5215, 4681, -113>,< 11689, -1522, 652>,< 5426, -2962, 702>,<3644, -1950, 2805>,< 3828, 444, 2014>,< 3460, -4399, 2014>,< 3033, -4059, 147>,< 1538, -2219, 380>,< -5266, -8759, 2526>,< -4778, -4308, 1639>,< -8843, -2208, 1306>,< -13540, -864, 1991>,< -15457, 300, 1480>,< -15109, -593, 3028>,< -12341, 5633, 2164>,< -15099, 7569, 1502>,< -14803, 7153, 1938>,< -14488, 9505, 2503>,< -13424, 7326, 1577>,< -14081, 8669, 1488>,< -8530, 2636, 2526>,< -184, -2232, 2015>,< 3649, -1951, 3697>,< -2581, -1887, 1187>]
+				printt("Set Vect")
+				break
+			case "sp_beacon_spoke0":
+				collPosition = [< -822, 1447, 422>,< -1905, 2265, 555>,< 78, 2959, 34>,< 4151, 5915, 513>,< -770, 5577, 479>,< 40, 6931, 210>,< 4160, 9434, 160>,< 2688, 8916, 830>,< 2994, 8540, -1664>,< 1380, 8597, -1426>,< 76, 10595, 984>,< -1016, 9206, 830>,< -1916, 11017, 956>,< -2716, 10535, 1228>,< -1670, 14888, 1104>,< -6050, 7676, 1306>,< -1230, 3899, 583>,< -1078, -571, 1041>,< 3786, 4138, 101>]
+				printt("Set Vect")
+				break
+			case "sp_tday":
+				collPosition = [< 3024, -15684, 813>,< 2952, -10843, 377>,< -405, -5217, 413>,< 4032, -7022, 558>,< 3721, -5250, 413>,< 2192, -5127, 814>,< 2179, -2978, 513>,< -86, -1956, 350>,< -759, 395, 158>,< 984, 4173, 60>,< -3403, 3564, 957>,< -5096, 3885, 222>,< -5465, 2648, 757>,< -5620, 3835, 1967>,< -4596, 6460, 3000>,< -3476, 6801, 1758>,< -7317, 10659, 2633>,< -12987, 7731, 2526>,< -10942, 6103, 2562>,< -14970, 12103, 3040>,< -14244, 15554, 2742>,< -7848, 13577, 3031>,< -8099, 14693, 3341>,< -7202, 15210, 2590>,< -2800, 14190, 3220>,< -5266, 12219, 2449>,< -906, 15447, 2526>]
+				printt("Set Vect")
+				break
+
+			default:
+				collPosition = [< RandomIntRange(-2000,2000), RandomIntRange(-2000,2000), RandomIntRange(-2000,2000)>,< RandomIntRange(-2000,2000), RandomIntRange(-2000,2000), RandomIntRange(-2000,2000)>,< RandomIntRange(-2000,2000), RandomIntRange(-2000,2000), RandomIntRange(-2000,2000)>,< RandomIntRange(-2000,2000), RandomIntRange(-2000,2000), RandomIntRange(-2000,2000)>,< RandomIntRange(-2000,2000), RandomIntRange(-2000,2000), RandomIntRange(-2000,2000)>,< RandomIntRange(-2000,2000), RandomIntRange(-2000,2000), RandomIntRange(-2000,2000)>,< RandomIntRange(-2000,2000), RandomIntRange(-2000,2000), RandomIntRange(-2000,2000)>,< RandomIntRange(-2000,2000), RandomIntRange(-2000,2000), RandomIntRange(-2000,2000)>]
+
+				break
+		}
+	}
+	if (GetMapName() == "sp_s2s")
+	{
+		switch (ent.kv.script_name)
+		{
+			// Sarah
+			case "widowhelmet":
+			//[< 0, 0, 100>,]
+			collPosition = [< 0, 0, 1000>,< 0, 0, 1000>,< 0, 0, 1000>,< 0, 0, 1000>]
+			break
+			// First half of the ship
+			case "dronehelmet":
+			collPosition = [< 1050, -5200, -140>,< 1050, -5900, -140>,< 1050, -4200, -140>,< 1050, -3750, -140>,< 1050, -2750, -140>,< 1050, -2250, -140>,< 1450, -2490, -440>,< 1450, -4030, -440>,< 1450, -5570, -440>,< 1250, -7470, 300>]
+			break
+			case "hangarhelmet":
+			collPosition = [< 900, 920, 380>,< 900, 920, 380>,< 900, 920, 380>,< 900, 920, 380>]
+			break
+			// Last half of the ship
+			case "hangarhelmet2":
+			collPosition = [< -880, 1000, 380>,< -880, 3300, 380>,< 200, 3500, 270>,< 200, 3500, 0>,< 200, 3500, -250>,< 200, 3500, -520>,< 200, 3500, -770>,< 200, 4300, 270>,< 200, 4300, 0>,< 200, 4300, -250>,< 200, 4300, -520>,< 200, 4300, -770>,< 200, 5100, 270>,< 200, 5100, 0>,< 200, 5100, -250>,< 200, 5100, -520>,< 200, 5100, -770>,< 200, 5800, 270>,< 200, 5800, 0>,< 200, 5800, -250>,< 200, 5800, -520>,< 200, 5800, -770>,< 200, 6550, 270>,< 200, 6550, 0>,< 200, 6550, -250>,< 200, 6550, -520>,< 200, 6550, -770>,< 1200, 3000, -480>,< 0, 3970, 630>,< 0, 3790, 1000>]
+			break
+		}
+	}
+	//------------------------
+
+	Collectible collectible
+	collectible.ent = ent
+
+	// Temporary random value of array
+	tempCollect = RandomIntRange(0,collPosition.len())
+
+	collectible.pos = collPosition[tempCollect]
+	file.collectibles.append( collectible )
+	// Drop to ground
+	if ( !collectible.ent.HasKey( "hover" ) || collectible.ent.kv.hover == "0" )
+	{
+		vector groundPos = collPosition[tempCollect]
+		collectible.ent.SetOrigin( groundPos + < 0, 0, 32 > )
+		//collectible.pos = collPosition[RandomIntRange(0,collPosition.len())]
+	}
+	else
+	{
+		vector groundPos = collPosition[tempCollect]
+		collectible.ent.SetOrigin( groundPos + < 0, 0, 32 > )
+		//collectible.pos = collPosition[RandomIntRange(0,collPosition.len())]
+	}
+
+	// Remove vector from index
+	if (GetMapName() != "sp_s2s"){
+		collPosition.remove(tempCollect)
+	}
+
+
+	// Effect and not solid
+	collectible.ent.DisableHibernation()
+	collectible.ent.NotSolid()
+	collectible.ent.EnableRenderAlways()
+	collectible.ent.kv.fadedist = 100000
+
+	// DEBUG
+	printt("Vectors: "+collPosition.len())
+	printt(collectible.ent.kv.script_name)
+
+	// 1 widowhelmet
+	// 2 dronehelmet
+	// 3 hangarhelmet
+}
+
+void function SetupCollectibles()
+{
+	// Make sure that the number of collectibles in the level matches the hardcoded value in sh_consts so that SP menus know total number per level.
+	string mapName = GetMapName()
+	int saveIndex = GetCollectibleLevelIndex( mapName )
+	Assert( saveIndex < 0 || file.collectibles.len() == GetMaxLionsInLevel( mapName ), "Collectibles count mismatch. Update LEVEL_UNLOCKS_COUNT in sh_consts.gnut to " + file.collectibles.len() )
+
+	// Index the collectibles so each is unique and it's status can be stored in a cvar. They are sorted by distance from map center to keep consistent on each map load
+	file.collectibles.sort( SortCollectiblesFunc )
+
+	foreach ( int i, Collectible collectible in file.collectibles )
+	{
+		collectible.id = 1 << i
+		thread CollectibleThink( collectible )
+	}
+}
+
+int function SortCollectiblesFunc( Collectible a, Collectible b )
+{
+	float distA = DistanceSqr( a.ent.GetOrigin(), <0,0,0> )
+	float distB = DistanceSqr( b.ent.GetOrigin(), <0,0,0> )
+	if ( distA > distB )
+		return 1
+	else if ( distA < distB )
+		return -1
+	return 0
+}
+
+void function UpdateCollectiblesAfterLoadSaveGame()
+{
+	// This has to run when a save game is loaded because the collectible may be there in the save game, but it was picked up after the save, so we need to delete the ones the player picked up
+	foreach ( Collectible collectible in file.collectibles )
+	{
+		if ( HasCollectible( collectible ) )
+		{
+			//DebugDrawSphere( collectible.pos, 40.0, 255, 0, 0, true, 600.0 )
+			if ( IsValid( collectible.ent ) )
+				collectible.ent.Destroy()
+			Signal( collectible, "CollectibleEndThink" )
+		}
+	}
+
+	// Delete all the weapons already unlocked in the level
+	array<string> unlockedLoadouts = GetSPTitanLoadoutsUnlocked()
+		SPTitanLoadout_RemoveOwnedLoadoutPickupsInLevel( unlockedLoadouts )
+}
+
+#if DEV
+	void function Dev_ResetCollectiblesProgress_Level()
+	{
+		printt( "RESETTING COLLECTIBLE PROGRESS (LEVEL)" )
+		string mapName = GetMapName()
+		int saveIndex = GetCollectibleLevelIndex( mapName )
+		if ( saveIndex == -1 )
+			return
+		printt( "  sp_unlocks_level_" + saveIndex, 0 )
+		SetConVarInt( "sp_unlocks_level_" + saveIndex, 0 )
+	}
+#endif
+
+void function CollectibleThink( Collectible collectible )
+{
+	EndSignal( collectible, "CollectibleEndThink" )
+
+	if ( HasCollectible( collectible ) )
+	{
+		//printt( "Player already has collectible", collectible.id )
+		//DebugDrawSphere( collectible.ent.GetOrigin(), 25.0, 150, 0, 0, true, 600.0 )
+		collectible.ent.Destroy()
+		return
+	}
+
+	entity glowEffect = StartParticleEffectOnEntity_ReturnEntity( collectible.ent, GetParticleSystemIndex( COLLECTIBLE_GLOW_EFFECT ), FX_PATTACH_ABSORIGIN_FOLLOW, 0 )
+
+	// Rotate the collectible
+	collectible.ent.NonPhysicsRotate( < 0, 0, 1 >, 35.0 )
+
+	WaitFrame() // emit sound doesn't work on first frame so we have to wait a frame so sound will play. Player can't pickup collectible in frame 1 anyways
+
+	EmitSoundOnEntity( collectible.ent, "Emit_PilotHelmet_Collectible" )
+
+	//wait 1.0
+	//DebugDrawText( collectible.ent.GetOrigin(), string(collectible.id), true, 600.0 )
+	//DebugDrawSphere( collectible.ent.GetOrigin(), 25.0, 255, 0, 0, true, 600.0 )
+
+	// Wait until it's touched by a player
+	entity player = WaitUntilPlayerPicksUp( collectible.ent )
+
+	// Remove collectible
+	EmitSoundOnEntity( player, "Pilot_Collectible_Pickup" )
+	if ( IsValid( glowEffect ) )
+		EffectStop( glowEffect )
+	collectible.ent.Destroy()
+
+	// Save to player profile
+	string mapName = GetMapName()
+	int saveIndex = GetCollectibleLevelIndex( mapName )
+	int bitMask
+	if ( saveIndex >= 0 )
+	{
+		// If it's a real map we store it to player profile
+		string unlockVar = "sp_unlocks_level_" + saveIndex
+		bitMask = GetConVarInt( unlockVar )
+		bitMask = bitMask | collectible.id
+		//printt( "Saving collectible state", unlockVar, bitMask )
+		SetConVarInt( unlockVar, bitMask )
+	}
+	else
+	{
+		// Not a real map, we store it to a file var that wont persist, just so we can pick them up and have kind of working collectibles in test maps
+		CodeWarning( "Collectible state not being saved because this map is not shipping" )
+		file.testMapCollectibleValue = file.testMapCollectibleValue | collectible.id
+		bitMask = file.testMapCollectibleValue
+	}
+
+	// See how many collectibles are found now to pass to the RUI
+	int numCollectiblesFound = GetCollectiblesFoundForLevel( mapName )
+	int maxCollectibles = GetMaxLionsInLevel( mapName )
+
+	// Show message on HUD
+	Remote_CallFunction_NonReplay( player, "ServerCallback_CollectibleFoundMessage", numCollectiblesFound, maxCollectibles )
+
+	CollectiblePickupRumble( player )
+
+	UpdateHeroStatsForPlayer( player )
+
+	int totalLionsCollectedForGame = GetTotalLionsCollected()
+
+	if ( totalLionsCollectedForGame >= GetTotalLionsInGame() )
+		UnlockAchievement( player, achievements.COLLECTIBLES_3 )
+
+	if ( totalLionsCollectedForGame >= ACHIEVEMENT_COLLECTIBLES_2_COUNT )
+		UnlockAchievement( player, achievements.COLLECTIBLES_2 )
+
+	if ( totalLionsCollectedForGame >= ACHIEVEMENT_COLLECTIBLES_1_COUNT )
+		UnlockAchievement( player, achievements.COLLECTIBLES_1 )
+}
+
+void function CollectiblePickupRumble( entity player )
+{
+	float rumbleAmplitude = 200.0
+	float rumbleFrequency = 90.0
+	float rumbleDuration = 2.2
+
+	CreateAirShakeRumbleOnly( player.GetOrigin(), rumbleAmplitude, rumbleFrequency, rumbleDuration )
+}
+
+bool function HasCollectible( Collectible collectible )
+{
+	string mapName = GetMapName()
+	int saveIndex = GetCollectibleLevelIndex( mapName )
+
+	// Not a shipping map, so there is no saved var for this level. Just always make it available
+	if ( saveIndex == -1 )
+		return false
+
+	string unlockVar = "sp_unlocks_level_" + saveIndex
+	int bitMask = GetConVarInt( unlockVar )
+
+	return bool(bitMask & collectible.id)
+}
