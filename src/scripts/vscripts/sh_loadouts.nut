@@ -3303,8 +3303,6 @@ string function Loadouts_GetSetFileForRequestedClass( entity player )
 		if ( !Loadouts_CanGiveTitanLoadout( player ) )
 			return false
 
-		Assert( IsMultiplayer(), "Spawning as a Titan is not supported in SP currently" )
-
 		entity soul = player.GetTitanSoul()
 
 		TakeAllWeapons( player )

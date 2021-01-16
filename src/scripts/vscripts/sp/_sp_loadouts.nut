@@ -579,7 +579,7 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 	// mp_weapon_wingman
 	// mp_weapon_wingman_n
 	// mp_weapon_smart_pistol
-	// mp_weapon_mlg
+	// mp_weapon_mgl
 
 
 	switch (RandomIntRange( 0, 23 ))
@@ -610,7 +610,7 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
 			break
 		case 5:
-			pilotLoadout.primary = "mp_weapon_mlg"
+			pilotLoadout.primary = "mp_weapon_mgl"
 			modsList = ["extended_ammo","pro_screen","pas_fast_reload","ar_trajectory","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun","at_unlimited_ammo"]
 			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
 			break
@@ -768,15 +768,6 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 		case "sp_crashsite":
 			pilotLoadout.special = "mp_ability_cloak"
 		break
-	}
-
-	// Automatically give toolgun in multiplayer levels, do this afterwards in case people mess with the default loadout
-	if( IsMultiplayerLevel() )
-	{
-		pilotLoadout.secondary = pilotLoadout.primary
-		pilotLoadout.secondaryMods = pilotLoadout.primaryMods
-		pilotLoadout.primary = "mp_weapon_shotgun_pistol"
-		pilotLoadout.primaryMods = []
 	}
 	return pilotLoadout
 }
