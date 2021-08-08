@@ -1,20 +1,20 @@
 {
-	"ApiId" : "randomizer",
-	"Name" : "Titanfall 2 Randomizer",
-	"Description" : "A mod to randomize Weapons, Grenades, Abilities, and Helmet Collectables",
-	"Authors" : [
+	"ApiId": "randomizer",
+	"Name": "Titanfall 2 Randomizer",
+	"Description": "A mod to randomize Weapons, Grenades, Abilities, and Helmet Collectables",
+	"Authors": [
 		"Tristan Kennedy"
 	],
-	"Contacts" : [
+	"Contacts": [
 		"tristan@taskinoz.com"
 	],
-	"Version" : "1.0",
+	"Version": "1.0",
 	"CustomScripts": [
 		{
 			"Path": "spmp_autoprecache.nut",
 			"RunOn": "CLIENT || SERVER",
-			"ClientCallback" : "MP_AutoPrecache",
-			"ServerCallback" : "MP_AutoPrecache"
+			"ClientCallback": "MP_AutoPrecache",
+			"ServerCallback": "MP_AutoPrecache"
 		}
 	]
 }

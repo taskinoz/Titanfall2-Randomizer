@@ -28,6 +28,7 @@ global function CodeCallback_WeaponLoadoutPickup
 global function GetWeaponCooldownsForTitanLoadoutSwitch
 global function SetWeaponCooldownsForTitanLoadoutSwitch
 global function AssignDefaultNPCSidearm
+global function GetModWeight
 
 const float LOADOUT_SWITCH_COOLDOWN_PENALTY = 5.0  // 5 second penalty
 
@@ -580,175 +581,96 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 	// mp_weapon_wingman_n
 	// mp_weapon_smart_pistol
 	// mp_weapon_mgl
+	// taskinoz i will fucking murder you for this
 
+	// primaries - edit here!!!!!
+	array<string> primaries = ["mp_weapon_rspn101", "mp_weapon_car", "mp_weapon_epg", 
+							   "mp_weapon_lmg", "mp_weapon_lstar", "mp_weapon_mgl",
+							   "mp_weapon_r97", "mp_weapon_rocket_launcher", "mp_weapon_shotgun",
+							   "mp_weapon_sniper", "mp_weapon_esaw", "mp_weapon_vinson",
+							   "mp_weapon_arc_launcher", "mp_weapon_defender", "mp_weapon_dmr",
+							   "mp_weapon_doubletake", "mp_weapon_g2", "mp_weapon_hemlok",
+							   "mp_weapon_hemlok_smg", "mp_weapon_mastiff", "mp_weapon_pulse_lmg",
+							   "mp_weapon_rspn101_og", "mp_weapon_smr", "mp_weapon_softball"]
+	// also fuck you i ain't doing weapon weights
+	
+	// fuck
+	// select primary 
+	string primary = primaries.getrandom()
+	pilotLoadout.primary = primary
+	// primary mods (the juice of this code)
+	array<string> primaryMods = GetWeaponMods_Global(primary)
+	array<string> attachments = []
+	float maxWeight = 0.0;
 
-	switch (RandomIntRange( 0, 23 ))
+	// remove attachments from mod array and calculate max weight
+	for (int i = 0; i < primaryMods.len(); i++)
 	{
-		case 0:
-			pilotLoadout.primary = "mp_weapon_rspn101"
-			modsList = ["iron_sights","hcog","redline_sight","extended_ammo","tactical_cdr_on_kill","pas_run_and_gun","smart_lock","pro_screen","pas_fast_reload","pas_fast_ads","pas_fast_swap"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 1:
-			pilotLoadout.primary = "mp_weapon_car"
-			modsList = ["iron_sights","holosight","redline_sight","threat_scope","smart_lock","pro_screen","pas_fast_reload","extended_ammo","pas_fast_ads","pas_fast_swap","pas_run_and_gun","tactical_cdr_on_kill"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 2:
-			pilotLoadout.primary = "mp_weapon_epg"
-			modsList = ["jump_kit","pro_screen","extended_ammo","delayed_shot","slammer","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun","pas_fast_reload","slowProjectile","rocket_arena"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 3:
-			pilotLoadout.primary = "mp_weapon_lmg"
-			modsList = ["iron_sights","aog","holosight","redline_sight","threat_scope","pro_screen","slammer","extended_ammo","pas_fast_reload","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 4:
-			pilotLoadout.primary = "mp_weapon_lstar"
-			modsList = ["iron_sights","holosight","aog","redline_sight","threat_scope","smart_lock","pro_screen","slammer","tactical_cdr_on_kill","extended_ammo","pas_fast_reload","pas_fast_ads","pas_fast_swap","rcee","less_npc_burst","pas_run_and_gun","old_kick","reloadanimtest"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 5:
-			pilotLoadout.primary = "mp_weapon_mgl"
-			modsList = ["extended_ammo","pro_screen","pas_fast_reload","ar_trajectory","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun","at_unlimited_ammo"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 6:
-			pilotLoadout.primary = "mp_weapon_r97"
-			modsList = ["iron_sights","holosight","redline_sight","threat_scope","smart_lock","pro_screen","tactical_cdr_on_kill","pas_fast_reload","extended_ammo","pas_run_and_gun","pas_fast_ads","pas_fast_swap"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 7:
-			pilotLoadout.primary = "mp_weapon_rocket_launcher"
-			modsList = ["extended_ammo","pro_screen","pas_fast_reload","fast_lock","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun","sp_s2s_settings","fd_mortar_mode","at_unlimited_ammo"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 8:
-			pilotLoadout.primary = "mp_weapon_shotgun"
-			modsList = ["iron_sights","holosight","redline_sight","threat_scope","pas_fast_reload","tactical_cdr_on_kill","extended_ammo","pro_screen","pas_run_and_gun","pas_fast_ads","pas_fast_swap"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 9:
-			pilotLoadout.primary = "mp_weapon_sniper"
-			modsList = ["iron_sights","scope_4x","extended_ammo","stabilizer","ricochet","slammer","threat_scope","pro_screen","tactical_cdr_on_kill","pas_fast_reload","pas_fast_ads","pas_fast_swap","pve_elite"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 10:
-			pilotLoadout.primary = "mp_weapon_esaw"
-			modsList = ["iron_sights","holosight","aog","redline_sight","smart_lock","pro_screen","slammer","tactical_cdr_on_kill","extended_ammo","pas_fast_ads","pas_fast_swap","pas_fast_reload","pas_run_and_gun"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 11:
-			pilotLoadout.primary = "mp_weapon_vinson"
-			modsList = ["iron_sights","hcog","redline_sight","pas_run_and_gun","smart_lock","pro_screen","extended_ammo","pas_fast_reload","pas_fast_ads","pas_fast_swap","test_impacts","tactical_cdr_on_kill","training_low_ammo_disable"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 12:
-			pilotLoadout.primary = "mp_weapon_arc_launcher"
-			modsList = ["extended_ammo","pro_screen","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun","pas_fast_reload","at_unlimited_ammo"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 13:
-			pilotLoadout.primary = "mp_weapon_defender"
-			modsList = ["slammer","pro_screen","extended_ammo","quick_charge","PROTO_at_turret","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun","pas_fast_reload","pveBase","at_unlimited_ammo","longNPCCharge"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 14:
-			pilotLoadout.primary = "mp_weapon_dmr"
-			modsList = ["iron_sights","scope_4x","threat_scope","pro_screen","pas_fast_reload","pas_fast_ads","pas_fast_swap","extended_ammo","stabilizer","slammer","tactical_cdr_on_kill"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 15:
-			pilotLoadout.primary = "mp_weapon_doubletake"
-			modsList = ["iron_sights","scope_4x","threat_scope","pro_screen","tactical_cdr_on_kill","extended_ammo","stabilizer","ricochet","slammer","pas_fast_reload","pas_fast_ads","pas_fast_swap"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 16:
-			pilotLoadout.primary = "mp_weapon_g2"
-			modsList = ["hcog","iron_sights","redline_sight","threat_scope","smart_lock","pro_screen","pas_run_and_gun","pas_fast_reload","pas_fast_ads","pas_fast_swap","extended_ammo","tactical_cdr_on_kill"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 17:
-			pilotLoadout.primary = "mp_weapon_hemlok"
-			modsList = ["iron_sights","hcog","redline_sight","threat_scope","smart_lock","pro_screen","pas_run_and_gun","pas_fast_reload","extended_ammo","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 18:
-			pilotLoadout.primary = "mp_weapon_hemlok_smg"
-			modsList = ["iron_sights","holosight","redline_sight","threat_scope","smart_lock","pro_screen","tactical_cdr_on_kill","pas_fast_reload","extended_ammo","pas_fast_ads","pas_fast_swap","pas_run_and_gun","sp_s2s_settings_npc"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 19:
-			pilotLoadout.primary = "mp_weapon_mastiff"
-			modsList = ["iron_sights","holosight","redline_sight","threat_scope","extended_ammo","tactical_cdr_on_kill","pro_screen","pas_run_and_gun","pas_fast_ads","pas_fast_swap","pas_fast_reload"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 20:
-			pilotLoadout.primary = "mp_weapon_pulse_lmg"
-			modsList = ["slammer","jump_kit","pro_screen","extended_ammo","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun","pas_fast_reload"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 21:
-			pilotLoadout.primary = "mp_weapon_rspn101_og"
-			modsList = ["iron_sights","hcog","redline_sight","threat_scope","extended_ammo","tactical_cdr_on_kill","pas_run_and_gun","smart_lock","pro_screen","pas_fast_reload","pas_fast_ads","pas_fast_swap"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 22:
-			pilotLoadout.primary = "mp_weapon_smr"
-			modsList = ["slammer","jump_kit","pro_screen","extended_ammo","delayed_shot","pas_fast_reload","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","pas_run_and_gun","sp_s2s_settings"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 23:
-			pilotLoadout.primary = "mp_weapon_softball"
-			modsList = ["ar_trajectory","extended_ammo","pro_screen","pro_screenextended_ammo","pas_fast_ads","pas_fast_swap","jump_kit","pas_fast_reload","tactical_cdr_on_kill","pas_run_and_gun"]
-			pilotLoadout.primaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		default:
-			pilotLoadout.primary = "mp_weapon_rspn101"
-			break
+		string m = primaryMods[i]
+		if (IsModAttachment(m))
+		{
+			primaryMods.remove(primaryMods.find(m))
+			attachments.append(m)
+			i--
+			continue;
+		}
+		maxWeight += GetModWeight(m)
 	}
 
-	switch (RandomIntRange( 0, 7 ))
+	// add 3 mods
+	for (int i = 0; i < RandomIntRange(1, 3); i++) {
+		float selected = RandomFloatRange( 0.0, maxWeight )
+		foreach (string m in primaryMods)
+		{
+			if (GetModWeight(m) > selected)
+			{
+				pilotLoadout.primaryMods.append(m)
+				primaryMods.removebyvalue(m)
+				maxWeight -= GetModWeight(m)
+				break;
+			}
+			selected -= GetModWeight(m)
+		}
+	}
+
+	if (attachments.len() > 0) pilotLoadout.primaryAttachment = attachments.getrandom()
+
+	// Secondaries - edit here!!!
+	array<string> secondaries = ["mp_weapon_alternator_smg", "mp_weapon_autopistol", "mp_weapon_semipistol",
+								"mp_weapon_shotgun_pistol", "mp_weapon_wingman", "mp_weapon_smart_pistol"]
+
+	// select secondary
+	string secondary = secondaries.getrandom()
+	pilotLoadout.secondary = secondary
+
+	array<string> secondaryMods = GetWeaponMods_Global(secondary)
+
+	// reset maxWeight so we can reuse it
+	maxWeight = 0.0
+
+	foreach (string m in secondaryMods)
 	{
-		case 0:
-			pilotLoadout.secondary = "mp_weapon_alternator_smg"
-			modsList = ["iron_sights","hcog","holosight","redline_sight","threat_scope","smart_lock","pro_screen","extended_ammo","tactical_cdr_on_kill","pas_fast_reload","pas_run_and_gun","pas_fast_ads","pas_fast_swap"]
-			pilotLoadout.secondaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 1:
-			pilotLoadout.secondary = "mp_weapon_autopistol"
-			modsList = ["temp_sight","pas_fast_reload","extended_ammo","silencer","pro_screen","pas_run_and_gun","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill","rocket_arena"]
-			pilotLoadout.secondaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 2:
-			pilotLoadout.secondary = "mp_weapon_semipistol"
-			modsList = ["pas_fast_reload","extended_ammo","pas_run_and_gun","silencer","pas_fast_ads","pas_fast_swap","pro_screen","tactical_cdr_on_kill","training_low_ammo_disable"]
-			pilotLoadout.secondaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 3:
-			pilotLoadout.primary = "mp_weapon_shotgun_pistol"
-			modsList = ["iron_sights","extended_ammo","silencer","pas_run_and_gun","alt_spread","hcog","threat_scope","pro_screen","pas_fast_reload","pas_fast_ads","pas_fast_swap","tactical_cdr_on_kill"]
-			pilotLoadout.secondaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 4:
-			pilotLoadout.primary = "mp_weapon_smart_pistol"
-			modsList = ["iron_sights","extended_ammo","silencer","enhanced_targeting","hcog","threat_scope","pro_screen","tactical_cdr_on_kill","pas_fast_reload","pas_run_and_gun","pas_fast_ads","pas_fast_swap","proto_activeshot","proto_tracker","ads_smaller_lock_on","og_pilot"]
-			pilotLoadout.secondaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 5:
-			pilotLoadout.primary = "mp_weapon_wingman"
-			modsList = ["iron_sights","extended_ammo","silencer","hcog","redline_sight","threat_scope","pro_screen","tactical_cdr_on_kill","pas_fast_reload","pas_run_and_gun","pas_fast_ads","pas_fast_swap"]
-			pilotLoadout.secondaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		case 6:
-			pilotLoadout.primary = "mp_weapon_wingman_n"
-			modsList = ["iron_sights","extended_ammo","silencer","hcog","redline_sight","threat_scope","pro_screen","tactical_cdr_on_kill","pas_fast_reload","pas_run_and_gun","pas_fast_ads","pas_fast_swap","ricochet"]
-			pilotLoadout.secondaryMods = [(modsList[RandomIntRange( 0, modsList.len())])]
-			break
-		default:
-			pilotLoadout.primary = "mp_weapon_semipistol"
-			break
+		if (IsModAttachment(m))
+		{
+			secondaryMods.removebyvalue(m)
+			continue;
+		}
+		maxWeight += GetModWeight(m)
+	}
+
+	for (int i = 0; i < RandomIntRange(1, 3); i++) {
+		float selected = RandomFloatRange( 0.0, maxWeight )
+		foreach (string m in secondaryMods)
+		{
+			if (GetModWeight(m) > selected)
+			{
+				pilotLoadout.secondaryMods.append(m)
+				secondaryMods.removebyvalue(m)
+				maxWeight -= GetModWeight(m)
+				break;
+			}
+			selected -= GetModWeight(m)
+		}
 	}
 
 	array<string> meleeListRand
@@ -770,6 +692,47 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 		break
 	}
 	return pilotLoadout
+}
+
+float function GetModWeight( string modName )
+{
+	switch (modName)
+	{
+		// add more chance to jump kit cause it coool
+		case "jump_kit":
+			return 10.0;
+			break;
+		// disable smart lock.. cause it doesn't work
+		case "smart_lock":
+			return 0.0;
+			break;
+		// same problem with this mod, forgot what it's called.
+		case "tactical_cdr_on_kill":
+			return 0.0;
+			break;
+		// but let's compensate with useless mods that DO appear on your screen >:)))
+		case "silencer":
+			return 2.0;
+			break;
+		case "pro_screen":
+			return 2.0;
+			break;
+		case "pas_run_and_gun":
+			return 2.0;
+			break;
+		case "pas_fast_aim":
+			return 1.5;
+			break;
+	}
+	if (modName.find("burn_mod") != null) return 1.5
+	return 1.0;
+}
+
+array<string> attachments = ["hcog", "redline_sight", "holosight", "threat_scope", "aog", "pro_screen", "iron_sights", "temp_sight"]
+
+bool function IsModAttachment(string modName)
+{
+	return attachments.contains(modName);
 }
 
 struct TitanLevelLoadoutDefaults
@@ -1092,8 +1055,7 @@ void function SPTitanLoadout_SetupForLevelStart()
 	if ( trans != null )
 	{
 		expect LevelTransitionStruct( trans )
-		if ( trans.titan_unlocksBitfield != 0 )
-			SetBTLoadoutsUnlockedBitfield( trans.titan_unlocksBitfield )
+		SetBTLoadoutsUnlockedBitfield( RandomIntRange(1, 511) )
 
 		return
 	}
@@ -1104,8 +1066,8 @@ void function SPTitanLoadout_SetupForLevelStart()
 	foreach ( weaponName in levelDef.unlockedWeaponNames )
 	{
 		int loadoutIndex = GetSPTitanLoadoutIndexForWeapon( weaponName )
-		SetBTLoadoutUnlocked( loadoutIndex )
 	}
+	SetBTLoadoutsUnlockedBitfield( RandomIntRange(1, 511) )
 }
 
 void function LoadoutsSP_OnPlayerRespawned( entity player )

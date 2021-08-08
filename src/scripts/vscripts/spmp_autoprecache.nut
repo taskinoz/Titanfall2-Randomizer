@@ -1,3 +1,6 @@
+untyped
+
+
 global function MP_AutoPrecache
 
 void function MP_AutoPrecache()
