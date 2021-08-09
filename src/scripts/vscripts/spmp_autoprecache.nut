@@ -1,7 +1,6 @@
 untyped
 
-
-global function MP_AutoPrecache
+globalize_all_functions
 
 void function MP_AutoPrecache()
 {
@@ -232,3 +231,10 @@ void function MP_AutoPrecache()
 	FlagSet( "FlightPath_TitanDrop" ) // Allows titanfall in level
 #endif
 }
+
+#if CLIENT
+void function PrintClientWeaponMods()
+{
+	foreach (string m in GetLocalClientPlayer().GetActiveWeapon().GetMods()) printt(m)
+}
+#endif

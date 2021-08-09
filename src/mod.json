@@ -3,10 +3,12 @@
 	"Name": "Titanfall 2 Randomizer",
 	"Description": "A mod to randomize Weapons, Grenades, Abilities, and Helmet Collectables",
 	"Authors": [
-		"Tristan Kennedy"
+		"Tristan Kennedy",
+		"JustANormalUser"
 	],
 	"Contacts": [
-		"tristan@taskinoz.com"
+		"tristan@taskinoz.com",
+		"JustANormalUser#3770"
 	],
 	"Version": "1.0",
 	"CustomScripts": [
@@ -15,6 +17,11 @@
 			"RunOn": "CLIENT || SERVER",
 			"ClientCallback": "MP_AutoPrecache",
 			"ServerCallback": "MP_AutoPrecache"
+		},
+		{
+			"Path": "client/cl_modhud.gnut",
+			"RunOn": "CLIENT",
+			"ClientCallback": "ModHUD_Init"
 		}
 	]
 }

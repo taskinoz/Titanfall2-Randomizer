@@ -1,0 +1,106 @@
+globalize_all_functions
+
+global string keybindDisplay = "zoom"
+
+global struct ModDisplay
+{
+    var modTitle
+    var modDesc
+}
+
+struct 
+{
+    array<ModDisplay> modDisplays
+    table<string, string> modNames = {}
+    table<string, string> modDescs = {}
+    array<string> displayMods = []
+} file
+
+void function ModHUD_Init()
+{
+    RegisterMod("jump_kit", "Jump Kit", "Boosts you `1reaaaly`0 far.")
+    RegisterMod("alt_spread", "TEMP MOD :D", "It does nothing. `1Suck it.`0")
+    RegisterMod("old_kick", "Old Kick", "Go up, L-STAR, not down!")
+    RegisterMod("reloadanimtest", "Alt Reload Animation", "Alternative, faster reload animation.")
+    RegisterMod("slammer", "SLAM AND DUNK", "You got trolled!")
+    RegisterMod("sp_s2s_settings", "Free Ammo", "Infinite stockpile.")
+    RegisterMod("delayed_shot", "Delayed Shot", "Slow, but `2then...`0")
+    RegisterMod("enhanced_targeting", "Enhanced targeting", "Faster lockon time, but you `2really shouldn't`0 `1%" + keybindDisplay + "%`0.")
+    // enhanced_targeting
+    for (int i = 0; i < 3; i++)
+    {
+        file.modDisplays.append(CreateModDisplay(i))
+    }
+    thread ModHud_Thread()
+}
+
+void function ModHud_Thread()
+{
+    while (true)
+    {
+        WaitFrame()
+        entity weapon = GetLocalClientPlayer().GetActiveWeapon()
+        if (!IsValid(weapon)) continue
+        array<string> mods = weapon.GetMods()
+        int slot = 0
+        foreach(string m in mods){
+            if (!file.displayMods.contains(m) || slot >= 3) {
+                continue;
+            }
+            SetModName(file.modDisplays[slot], file.modNames[m])
+            SetModDesc(file.modDisplays[slot], file.modDescs[m])
+            slot++
+        }
+        for (int i = 2; i >= slot; i--)
+        {
+            SetModName(file.modDisplays[i], "")
+            SetModDesc(file.modDisplays[i], "")
+        }
+    }
+}
+
+void function SetModName(ModDisplay display, string name)
+{
+	RuiSetString( display.modTitle, "msgText", name )
+}
+
+void function SetModDesc(ModDisplay display, string desc)
+{
+	RuiSetString( display.modDesc, "msgText", desc )
+}
+
+ModDisplay function CreateModDisplay(int line)
+{
+    ModDisplay display
+    var rui
+    rui = RuiCreate( $"ui/cockpit_console_text_top_left.rpak", clGlobal.topoCockpitHudPermanent, RUI_DRAW_COCKPIT, 0 )
+	RuiSetInt( rui, "maxLines", 1 )
+	RuiSetInt( rui, "lineNum", 1 )
+	RuiSetFloat2( rui, "msgPos", <0.05, 0.1 + 0.05 * line, 0.0> )
+	RuiSetString( rui, "msgText", "Mod Name" )
+	RuiSetFloat( rui, "msgFontSize", 48.0 )
+	RuiSetFloat( rui, "msgAlpha", 0.9 )
+	RuiSetFloat( rui, "thicken", 0.0 )
+	RuiSetFloat3( rui, "msgColor", <1.0, 0.55, 0.1> )
+    display.modTitle = rui
+
+    rui = RuiCreate( $"ui/cockpit_console_text_top_left.rpak", clGlobal.topoCockpitHudPermanent, RUI_DRAW_COCKPIT, 0 )
+	RuiSetInt( rui, "maxLines", 1 )
+	RuiSetInt( rui, "lineNum", 1 )
+	RuiSetFloat2( rui, "msgPos", <0.05, 0.16 + 0.05 * line, 0.0> )
+	RuiSetString( rui, "msgText", "Mod Desc" )
+	RuiSetFloat( rui, "msgFontSize", 24.0 )
+	RuiSetFloat( rui, "msgAlpha", 0.9 )
+	RuiSetFloat( rui, "thicken", 0.0 )
+	RuiSetFloat3( rui, "msgColor", <1.0, 1.0, 1.0> )
+    display.modDesc = rui
+
+    return display
+}
+
+void function RegisterMod( string modName, string displayName, string desc)
+{
+    file.modNames[modName] <- displayName
+    file.modDescs[modName] <- desc
+    file.displayMods.append(modName)
+}

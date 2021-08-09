@@ -170,7 +170,7 @@ function CommonNPCOnSpawned( entity npc )
 			npc.GiveWeapon( spawnoptionsweapon.wep, spawnoptionsweapon.mods )
 			
 			foreach(entity weapon in npc.GetMainWeapons()){
-				GenerateNPCMods(weapon)
+				thread GenerateNPCMods(weapon)
 			}
 		}
 
@@ -428,7 +428,9 @@ function CommonNPCOnSpawned( entity npc )
 #if SERVER
 void function GenerateNPCMods( entity weapon )
 {
+	WaitFrame()
 	// fuck this.
+	if (!IsValid(weapon)) return;
 	if (weapon.GetWeaponClassName().find("sp") != null) return;
 	array<string> primaryMods = GetWeaponMods_Global(weapon.GetWeaponClassName())
 	array<string> attachments = []
