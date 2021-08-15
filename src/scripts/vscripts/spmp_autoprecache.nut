@@ -209,6 +209,7 @@ void function MP_AutoPrecache()
 	PrecacheModel( $"models/weapons/arms/pov_titan_medium_tone_prime.mdl" )
 	PrecacheModel( $"models/weapons/arms/pov_titan_medium_vanguard.mdl" )
 	PrecacheModel( $"models/weapons/arms/pov_titan_medium_wraith.mdl" )
+	PrecacheModel( $"models/weapons/arms/pov_mlt_hero_jack.mdl" )
 	PrecacheModel( $"models/weapons/sentry_frag/sentry_frag.mdl" )
 
 #if CLIENT
