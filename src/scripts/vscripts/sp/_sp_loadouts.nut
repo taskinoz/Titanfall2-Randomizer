@@ -728,7 +728,7 @@ float function GetModWeight( string modName )
 	return 1.0;
 }
 
-array<string> attachments = ["hcog", "redline_sight", "holosight", "threat_scope", "aog", "pro_screen", "iron_sights", "temp_sight"]
+array<string> attachments = ["hcog", "redline_sight", "holosight", "threat_scope", "aog", "pro_screen", "iron_sights", "temp_sight", "scope_4x", "stabilizer"]
 
 bool function IsModAttachment(string modName)
 {
