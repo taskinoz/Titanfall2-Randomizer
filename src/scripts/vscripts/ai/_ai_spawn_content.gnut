@@ -11,7 +11,7 @@ struct
 {
 	array<string> 	pilotAntiTitanWeapons
 	int 			nextAntiTitanWeaponAutoAssign
-	array<string> attachments = ["hcog", "redline_sight", "holosight", "threat_scope", "aog", "pro_screen", "iron_sights", "temp_sight"]
+	array<string> attachments = ["hcog", "redline_sight", "holosight", "threat_scope", "aog", "pro_screen", "iron_sights", "temp_sight", "scope_4x", "stabilizer"]
 } file
 
 function AiSpawnContent_Init()
