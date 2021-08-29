@@ -29,6 +29,7 @@ global function GetWeaponCooldownsForTitanLoadoutSwitch
 global function SetWeaponCooldownsForTitanLoadoutSwitch
 global function AssignDefaultNPCSidearm
 global function GetModWeight
+global function getRandomAbility
 
 const float LOADOUT_SWITCH_COOLDOWN_PENALTY = 5.0  // 5 second penalty
 
@@ -566,6 +567,18 @@ array<string> function GetNPCDefaultWeapons()
 	return weapons
 }
 
+string function getRandomAbility() {
+
+	array<string> randomAbility = ["mp_ability_cloak",
+																 "mp_weapon_hard_cover",
+																 "mp_weapon_grenade_sonar",
+																 "mp_ability_grapple",
+																 "mp_ability_heal",
+																 "mp_ability_holopilot",
+																 "mp_ability_shifter"]
+	return randomAbility.getrandom()
+}
+
 PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 {
 	PilotLoadoutDef pilotLoadout
@@ -584,7 +597,7 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 	// taskinoz i will fucking murder you for this
 
 	// primaries - edit here!!!!!
-	array<string> primaries = ["mp_weapon_rspn101", "mp_weapon_car", "mp_weapon_epg", 
+	array<string> primaries = ["mp_weapon_rspn101", "mp_weapon_car", "mp_weapon_epg",
 							   "mp_weapon_lmg", "mp_weapon_lstar", "mp_weapon_mgl",
 							   "mp_weapon_r97", "mp_weapon_rocket_launcher", "mp_weapon_shotgun",
 							   "mp_weapon_sniper", "mp_weapon_esaw", "mp_weapon_vinson",
@@ -593,9 +606,9 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 							   "mp_weapon_hemlok_smg", "mp_weapon_mastiff", "mp_weapon_pulse_lmg",
 							   "mp_weapon_rspn101_og", "mp_weapon_smr", "mp_weapon_softball"]
 	// also fuck you i ain't doing weapon weights
-	
+
 	// fuck
-	// select primary 
+	// select primary
 	string primary = primaries.getrandom()
 	pilotLoadout.primary = primary
 	// primary mods (the juice of this code)
@@ -681,16 +694,13 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 	ordnanceListRand = ["mp_weapon_frag_grenade","mp_weapon_frag_drone","mp_weapon_grenade_gravity","mp_weapon_grenade_electric_smoke","mp_weapon_grenade_emp","mp_weapon_thermite_grenade","mp_weapon_satchel"]
 	pilotLoadout.ordnance = (ordnanceListRand[RandomIntRange( 0, ordnanceListRand.len() )]).tostring()
 
-	array<string> specialListRand
-	specialListRand = ["mp_ability_cloak","mp_weapon_hard_cover","mp_weapon_grenade_sonar","mp_ability_grapple","mp_ability_heal","mp_ability_holopilot","mp_ability_shifter"]
-	pilotLoadout.special = (specialListRand[RandomIntRange( 0, specialListRand.len() )]).tostring()
-
-	switch ( GetMapName() )
+	//array<string> specialListRand
+	//specialListRand = ["mp_ability_cloak","mp_weapon_hard_cover","mp_weapon_grenade_sonar","mp_ability_grapple","mp_ability_heal","mp_ability_holopilot","mp_ability_shifter"]
+	if ( GetMapName() != "sp_crashsite" )
 	{
-		case "sp_crashsite":
-			pilotLoadout.special = "mp_ability_cloak"
-		break
+		pilotLoadout.special = getRandomAbility()
 	}
+
 	return pilotLoadout
 }
 
