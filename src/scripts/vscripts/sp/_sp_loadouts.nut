@@ -701,6 +701,16 @@ PilotLoadoutDef function GetPilotLoadoutForCurrentMapSP()
 		pilotLoadout.special = getRandomAbility()
 	}
 
+	// Fix level specific set files
+	if ( GetMapName() == "sp_crashsite" )
+	{
+		pilotLoadout.setFile = "civilian_solo"
+	}
+	else if ( GetMapName() == "sp_training" )
+	{
+		pilotLoadout.setFile = "pilot_solo_training"
+	}
+
 	return pilotLoadout
 }
 
