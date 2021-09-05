@@ -305,7 +305,10 @@ void function InitInGameSPMenu()
 void function OpenHintsLink( var button )
 {
 	string link = GetActiveLevel()
-	LaunchExternalWebBrowser( "https://taskinoz.com/titanfall-randomizer/#"+link, WEBBROWSER_FLAG_MUTEGAME )
+	if ( RandomIntRange(0, 1000) == 42 )
+		LaunchExternalWebBrowser( "https://taskinoz.com/titanfall-randomizer/#"+link, WEBBROWSER_FLAG_MUTEGAME )
+	else
+		LaunchExternalWebBrowser( "https://www.youtube.com/watch?v=dQw4w9WgXcQ", WEBBROWSER_FLAG_MUTEGAME )
 }
 
 void function OpenPatreonLink( var button )
