@@ -303,7 +303,7 @@ void function InitInGameSPMenu()
 void function OpenHintsLink( var button )
 {
 	string link = GetActiveLevel()
-	LaunchExternalWebBrowser( "https://taskinoz.com/#"+link, WEBBROWSER_FLAG_MUTEGAME )
+	LaunchExternalWebBrowser( "https://taskinoz.com/titanfall-randomizer/#"+link, WEBBROWSER_FLAG_MUTEGAME )
 }
 
 void function OnOpenInGameSPMenu()
