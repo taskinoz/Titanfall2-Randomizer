@@ -263,6 +263,8 @@ void function InitInGameSPMenu()
 	var randomizerHeader = AddComboButtonHeader( comboStruct, headerIndex, "Randomizer" )
 	var hintButton = AddComboButton( comboStruct, headerIndex, buttonIndex++, "Hint" )
 	Hud_AddEventHandler( hintButton, UIE_CLICK, OpenHintsLink  )
+	var patreonButton = AddComboButton( comboStruct, headerIndex, buttonIndex++, "Patreon" )
+	Hud_AddEventHandler( patreonButton, UIE_CLICK, OpenPatreonLink  )
 
 	array<var> orderedButtons
 
@@ -304,6 +306,11 @@ void function OpenHintsLink( var button )
 {
 	string link = GetActiveLevel()
 	LaunchExternalWebBrowser( "https://taskinoz.com/titanfall-randomizer/#"+link, WEBBROWSER_FLAG_MUTEGAME )
+}
+
+void function OpenPatreonLink( var button )
+{
+	LaunchExternalWebBrowser( "https://www.patreon.com/taskinoz", WEBBROWSER_FLAG_MUTEGAME )
 }
 
 void function OnOpenInGameSPMenu()
