@@ -168,7 +168,7 @@ function CommonNPCOnSpawned( entity npc )
 
 			NPCDefaultWeapon spawnoptionsweapon = expect NPCDefaultWeapon( npc.ai.mySpawnOptions_weapon )
 			npc.GiveWeapon( spawnoptionsweapon.wep, spawnoptionsweapon.mods )
-			
+
 			foreach(entity weapon in npc.GetMainWeapons()){
 				thread GenerateNPCMods(weapon)
 			}
@@ -431,6 +431,7 @@ void function GenerateNPCMods( entity weapon )
 	WaitFrame()
 	// fuck this.
 	if (!IsValid(weapon)) return;
+	if (weapon.GetWeaponClassName() == "mp_weapon_rocket_launcher" && GetMapName() == "sp_sewers1") return;
 	if (weapon.GetWeaponClassName().find("sp") != null) return;
 	array<string> primaryMods = GetWeaponMods_Global(weapon.GetWeaponClassName())
 	array<string> attachments = []

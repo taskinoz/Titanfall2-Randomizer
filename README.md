@@ -2,10 +2,9 @@
 A mod to randomize Weapons, Grenades, Abilities, and Helmet Collectables
 
 # Bugs
-**BNR**
+**Smart Pistol Mod**
 ```
-ai/_ai_spawn_content.gnut #489
-[SERVER] Error setting mods on weapon 'mp_weapon_rocket_launcher'. See console log for details.
+Right click mod will crash the game, but it does warn you
 ```
 **ENC 1**
 ```
