@@ -265,6 +265,8 @@ void function InitInGameSPMenu()
 	Hud_AddEventHandler( hintButton, UIE_CLICK, OpenHintsLink  )
 	var patreonButton = AddComboButton( comboStruct, headerIndex, buttonIndex++, "Patreon" )
 	Hud_AddEventHandler( patreonButton, UIE_CLICK, OpenPatreonLink  )
+	var helmetResetButton = AddComboButton( comboStruct, headerIndex, buttonIndex++, "Reset Helmets" )
+	Hud_AddEventHandler( helmetResetButton, UIE_CLICK, ResetHelmets  )
 
 	array<var> orderedButtons
 
@@ -314,6 +316,11 @@ void function OpenHintsLink( var button )
 void function OpenPatreonLink( var button )
 {
 	LaunchExternalWebBrowser( "https://www.patreon.com/taskinoz", WEBBROWSER_FLAG_MUTEGAME )
+}
+
+void function ResetHelmets( var button )
+{
+	ResetCollectiblesProgress_All()
 }
 
 void function OnOpenInGameSPMenu()
