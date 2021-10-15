@@ -25,3 +25,11 @@ Right click mod will crash the game, but it does warn you
 ```
 Anderson's helmet is invisible
 ```
+**ARK**
+```
+Guns get removed when falling on to Barkers ship
+```
+**General**
+```
+Holopilots crash when the game cleans them up
+```
