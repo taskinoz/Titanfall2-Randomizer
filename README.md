@@ -31,7 +31,3 @@ Anderson's helmet is invisible
 ```
 Guns get removed when falling on to Barkers ship
 ```
-**General**
-```
-Holopilots crash when the game cleans them up
-```
