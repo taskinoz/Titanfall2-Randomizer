@@ -1087,7 +1087,10 @@ void function SPTitanLoadout_SetupForLevelStart()
 	{
 		int loadoutIndex = GetSPTitanLoadoutIndexForWeapon( weaponName )
 	}
-	SetBTLoadoutsUnlockedBitfield( RandomIntRange(1, 511) )
+	if (GetMapName() != "sp_crashsite")
+		SetBTLoadoutsUnlockedBitfield( RandomIntRange(1, 511) )
+	else
+		SetBTLoadoutsUnlockedBitfield( 53 )
 }
 
 void function LoadoutsSP_OnPlayerRespawned( entity player )
