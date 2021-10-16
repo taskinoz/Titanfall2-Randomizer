@@ -3953,7 +3953,7 @@ void function FreeFall_Main( entity player )
 	float blendTime = 0.5
 	player.SetParent( node, "REF", false, blendTime )
 	player.DisableWeapon()
-	TakeAllWeapons( player )
+	//TakeAllWeapons( player )
 	player.ForceStand()
 	Melee_Disable( player )
 
@@ -3988,6 +3988,7 @@ void function FreeFall_Main( entity player )
 	player.ClearAnimNearZ()
 
 	//GivePlayerDefaultWeapons( player )
+	player.RefillAllAmmo()
 	player.DeployWeapon()
 
 	wait 2.5
