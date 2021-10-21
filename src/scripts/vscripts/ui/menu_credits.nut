@@ -783,11 +783,11 @@ function InitPeople()
 //============================
 // Mod
 AddDepartment( "randomizermod", "Randomizer Mod" )
-AddNameOnly( "randomizermod", "Taskinoz (Tristan)" )
+AddNameOnly( "randomizermod", "Taskinoz / Tristan" )
 // Mod Devs
 AddDepartment( "randomizerdev", "Mod Developers" )
-AddNameOnly( "randomizerdev", "Taskinoz (Tristan)" )
-AddNameOnly( "randomizerdev", "JustANormalUser (EladNLG)" )
+AddNameOnly( "randomizerdev", "Taskinoz / Tristan" )
+AddNameOnly( "randomizerdev", "JustANormalUser / EladNLG" )
 // Mod Testers
 AddDepartment( "randomizertester", "Mod Testers" )
 AddNameOnly( "randomizertester", "Fzzy" )
