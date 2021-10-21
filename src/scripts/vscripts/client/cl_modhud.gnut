@@ -8,7 +8,7 @@ global struct ModDisplay
     var modDesc
 }
 
-struct 
+struct
 {
     array<ModDisplay> modDisplays
     table<string, string> modNames = {}
@@ -77,7 +77,8 @@ ModDisplay function CreateModDisplay(int line)
 	RuiSetInt( rui, "maxLines", 1 )
 	RuiSetInt( rui, "lineNum", 1 )
 	RuiSetFloat2( rui, "msgPos", <0.05, 0.1 + 0.05 * line, 0.0> )
-	RuiSetString( rui, "msgText", "Mod Name" )
+  // Mod Name
+	RuiSetString( rui, "msgText", "" )
 	RuiSetFloat( rui, "msgFontSize", 48.0 )
 	RuiSetFloat( rui, "msgAlpha", 0.9 )
 	RuiSetFloat( rui, "thicken", 0.0 )
@@ -88,7 +89,8 @@ ModDisplay function CreateModDisplay(int line)
 	RuiSetInt( rui, "maxLines", 1 )
 	RuiSetInt( rui, "lineNum", 1 )
 	RuiSetFloat2( rui, "msgPos", <0.05, 0.16 + 0.05 * line, 0.0> )
-	RuiSetString( rui, "msgText", "Mod Desc" )
+  // Mod Description
+	RuiSetString( rui, "msgText", "" )
 	RuiSetFloat( rui, "msgFontSize", 24.0 )
 	RuiSetFloat( rui, "msgAlpha", 0.9 )
 	RuiSetFloat( rui, "thicken", 0.0 )
