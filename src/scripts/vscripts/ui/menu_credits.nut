@@ -118,6 +118,7 @@ function RollCredits()
 	ScrollSingleColumnCenteredNames( "randomizermod" )
 	ScrollSingleColumnCenteredNames( "randomizerdev" )
 	ScrollSingleColumnCenteredNames( "randomizertester" )
+	ScrollSingleColumnCenteredNames( "randomizerhelmet" )
 	ScrollSingleColumnCenteredNames( "gamedir" )
 	ScrollSingleColumnCenteredNames( "techdir" )
 	ScrollSingleColumnCenteredNames( "ceo" )
@@ -791,9 +792,13 @@ AddNameOnly( "randomizerdev", "JustANormalUser / EladNLG" )
 // Mod Testers
 AddDepartment( "randomizertester", "Mod Testers" )
 AddNameOnly( "randomizertester", "Fzzy" )
-AddNameOnly( "randomizertester", "Zweek" )
+AddNameOnly( "randomizertester", "zweek" )
 AddNameOnly( "randomizertester", "SpectralSmitty" )
 AddNameOnly( "randomizertester", "Angry Space Dorito" )
+// Mod Helmet Locations
+AddDepartment( "randomizerhelmet", "Helmet Location Helpers" )
+AddNameOnly( "randomizerhelmet", "Viz" )
+AddNameOnly( "randomizerhelmet", "bumpkin" )
 
 //============================
 //	EXECUTIVE

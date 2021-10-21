@@ -2937,9 +2937,14 @@ void function Add_Randomizer()
 
 	Add_Title( "Mod Testers" )
 	Add_Name( "Fzzy" )
-	Add_Name( "Zweek" )
+	Add_Name( "zweek" )
 	Add_Name( "SpectralSmitty" )
 	Add_Name( "Angry Space Dorito" )
+	wait STANDARD_DELAY
+
+	Add_Title( "Helmet Location Helpers" )
+	Add_Name( "Viz" )
+	Add_Name( "bumpkin" )
 	wait STANDARD_DELAY
 }
 
