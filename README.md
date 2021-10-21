@@ -17,6 +17,21 @@ After getting Icepick download the [Titanfall 2 Randomizer](https://github.com/t
 
 You can now launch the game with the Icepick launcher.
 
+## Credits
+
+**Developers:**
+- Taskinoz / Tristan
+- JustANormalUser / EladNLG
+
+**Testers:**
+- Fzzy
+- zweek
+- SpectralSmitty
+- Angry Space Dorito
+
+**Helmet Location Helpers**
+- Viz
+- bumpkin
 
 ## Bugs
 **Smart Pistol Mod**
