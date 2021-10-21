@@ -5,7 +5,7 @@ A mod to randomize Weapons, Grenades, Abilities, and Helmet Collectables
 
 ## About
 
-The Titanfall 2 Randomizer takes the main campaign gameplay and turns it on its head. All the guns are random, all the abilities are random, the Titan classes available are random, and the helmet collectables are random. Each level has 15-30 random positions totalling 170 random positions.
+The Titanfall 2 Randomizer takes the main campaign gameplay and turns it on its head. All the guns are random, all the abilities are random, the Titan classes available are random, and the helmet collectables are random. Each level has 15-30 random positions totalling 270 random positions.
 
 ![Screenshot showing 4 different loadouts](https://github.com/taskinoz/Titanfall2-Randomizer/blob/093503b204ac59118384013d3611795b17a483fb/assets/RandomizerScreenshot.png)
 
