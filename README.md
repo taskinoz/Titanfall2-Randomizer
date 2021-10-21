@@ -13,7 +13,7 @@ The Titanfall 2 Randomizer takes the main campaign gameplay and turns it on its 
 
 To use this mod you will need to get [Icepick](https://titanfallmods.com/), which is a mod loader for Titanfall 2.
 
-After getting Icepick download the [Titanfall 2 Randomizer](https://github.com/taskinoz/Titanfall-Randomizer-Hints/releases) and drag the zip file onto the Icepick launcher. For optimal compatibility disable all the other mods by double clicking on them.
+After getting Icepick download the [Titanfall 2 Randomizer](https://github.com/taskinoz/Titanfall2-Randomizer/releases) and drag the zip file onto the Icepick launcher. For optimal compatibility disable all the other mods by double clicking on them.
 
 You can now launch the game with the Icepick launcher.
 
