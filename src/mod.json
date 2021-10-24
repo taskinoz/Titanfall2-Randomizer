@@ -10,7 +10,7 @@
 		"tristan@taskinoz.com",
 		"JustANormalUser#3770"
 	],
-	"Version": "1.0",
+	"Version": "1.2.0",
 	"CustomScripts": [
 		{
 			"Path": "spmp_autoprecache.nut",
